@@ -81,7 +81,7 @@
     height: 500px;
     background: #ffffff;
     border-radius: 12px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    box-shadow: 0 8px 20px rgba(246, 245, 245, 0.2);
     text-align: center;
     padding: 10px;
     position: absolute;
@@ -160,7 +160,7 @@
       width: 100vw;
       height: 100vh;
       z-index: -1;       /* nằm dưới carousel */
-      background: black; /* nền đen cho chữ rơi */
+      background: rgb(124, 24, 24); /* nền đen cho chữ rơi */
     }
     .falling-text {
       position: absolute;
@@ -193,8 +193,12 @@
 <!-- DANH SÁCH NGÀY -->
 <div class="days">
   <div class="day" 
-     data-media="https://drive.google.com/uc?export=download&id=1FIjMscFFNc9qDCO-gVEGgRwFfWY-PHsC">
+     data-media="https://drive.google.com/file/d/1FIjMscFFNc9qDCO-gVEGgRwFfWY-PHsC/preview">
   Ngày 15/08/2025
+</div>
+<div class="day" 
+     data-media="https://youtu.be/xI0DcMqV-UM">
+  Ngày 17/08/2025
 </div>
   <div class="day" data-media="day1/minh1.mp4,day1/video1.mp4,day1/1.jpg,day1/2.jpg,day1/3.jpg">Ngày 15/08/2025</div>
     <div class="day" 
@@ -426,6 +430,76 @@ window.addEventListener("resize", () => {
   canvas.height = window.innerHeight;
 });
 
+function makeMediaEl(src) {
+  // Regex nhận diện
+  const isImage = s => /\.(jpe?g|png|gif|webp|avif)$/i.test(s);
+  const isVideo = s => /\.(mp4|webm|ogg)$/i.test(s);
+
+  // --- Trường hợp Google Drive ---
+  if (src.includes("drive.google.com")) {
+    let fileIdMatch = src.match(/[-\w]{25,}/); // bắt ID trong link
+    if (fileIdMatch) {
+      const fileId = fileIdMatch[0];
+      // Nếu trong link có "view" => coi như ảnh
+      if (src.includes("view")) {
+        const img = document.createElement("img");
+        img.src = `https://drive.google.com/uc?export=view&id=${fileId}`;
+        return img;
+      } else {
+        // còn lại coi như video
+        const vid = document.createElement("video");
+        vid.src = `https://drive.google.com/uc?export=download&id=${fileId}`;
+        vid.playsInline = true;
+        vid.muted = true;
+        vid.loop = true;
+        vid.autoplay = true;
+        return vid;
+      }
+    }
+  }
+
+  // --- Trường hợp YouTube ---
+  if (src.includes("youtu")) {
+    let videoId = "";
+    if (src.includes("youtu.be")) {
+      videoId = src.split("/").pop();
+    } else if (src.includes("watch?v=")) {
+      videoId = src.split("v=")[1].split("&")[0];
+    }
+    if (videoId) {
+      const iframe = document.createElement("iframe");
+      iframe.src = "https://www.youtube.com/embed/" + videoId;
+      iframe.width = "100%";
+      iframe.height = "200";
+      iframe.frameBorder = "0";
+      iframe.allow =
+        "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
+      iframe.allowFullscreen = true;
+      return iframe;
+    }
+  }
+
+  // --- Ảnh thường ---
+  if (isImage(src)) {
+    const img = document.createElement("img");
+    img.src = src;
+    return img;
+  }
+
+  // --- Video thường ---
+  if (isVideo(src)) {
+    const vid = document.createElement("video");
+    vid.src = src;
+    vid.playsInline = true;
+    vid.muted = true;
+    vid.loop = true;
+    vid.autoplay = true;
+    return vid;
+  }
+
+  // --- Không nhận diện được ---
+  return document.createTextNode("Không hỗ trợ: " + src);
+}
 </script>
 </body>
 </html>
