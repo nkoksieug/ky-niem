@@ -1,482 +1,506 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <title>Vòng xoay kỷ niệm</title>
-  <!-- Viewport CHUẨN cho mobile -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta charset="UTF-8" />
+<title>Vòng xoay kỷ niệm</title>
+<meta name="viewport" content="width=device-width, initial-scale=0.95, maximum-scale=1.0, user-scalable=no">
 
-  <style>
-    :root{
-      --arrow-size: 44px;
-      --card-w: 320px;      /* PC */
-      --card-h: 200px;      /* PC */
-      --card-radius: 12px;
-    }
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f7f9fc;
+    text-align: center;
+    margin: 0;
+    height: 100vh;
+    overflow: hidden;
+    overflow-y: scroll;
+  }
+  h1 { margin: 16px 0; }
 
-    *{box-sizing:border-box}
+  .stage {
+    width: 100%;
+    height: 70vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .carousel {
+    width: 100%;
+    height: 100%;
+    perspective: 1500px;
+    margin-top: 100px;
+    margin-bottom: 50px;
+    display: flex;
+    justify-content: right;
+    scroll-snap-type: x mandatory;
+    align-items: center;
+    cursor: grab;
+  }
+  #carousel {
+    width: 80%;
+    height: 80vh;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden; 
+  }
+  h1, h2, h3 {
+    margin-bottom: 60px;
+    position: relative;
+    z-index: 2;
+  }
+  .carousel-slide img {
+    width: 100%;
+    height: auto;
+    max-height: 650px;   /* 👈 ảnh cao tối đa */
+    object-fit: contain; /* 👈 giữ ảnh nguyên tỉ lệ, không bị cắt */
+    border-radius: 20px;
+  }
+  .carousel-container {
+    perspective: 1000px;
+    max-width: 5000px;
+    padding: 20px;
+    height: 1000px;
+    max-height: 500px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    padding-bottom: 40px;
+  }
+  
+  .carousel.dragging { cursor: grabbing; }
 
-    body {
-      font-family: Arial, sans-serif;
-      background: #f7f9fc;
-      text-align: center;
-      margin: 0;
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
+  .carousel-track {
+    width: 100%;
+    height: 1000px;
+    position: relative;
+    transform-style: preserve-3d;
+  }
 
-    h1 {
-      margin: 16px 0 8px;
-      line-height: 1.2;
-      z-index: 2;
-      position: relative;
-    }
+  .card {
+    width: 320px;
+    height: 200px;
+    border-radius: 1%;
+    box-shadow: 0 8px 20px rgba(254, 251, 251, 0.2);
+    text-align: center;
+    padding: 10px;
+    position: absolute;
+    top: 35px;
+    left: 50%;
+    transform: translateX(-50%);
+    transition: transform 0.3s ease;
+    overflow: hidden;
+    padding-bottom: 50px;
+    padding-top:3.8%;
+  }
 
-    /* nền canvas */
-    canvas { display: block; }
-    #bg-canvas {
-      position: fixed;
-      inset: 0;
-      z-index: -1;
-      background: #fcf8f8;
-      pointer-events: none;
-    }
+  .card img,
+.card video,
+.card iframe {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain; /* Giữ nguyên tỉ lệ */
+  border-radius: 10px;
+  display: block;
+  margin: auto;
+}
 
-    /* khung sân khấu */
-    .stage {
-      width: 100%;
-      height: 70vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      position: relative;
-      overflow: hidden;
-    }
+  .caption {
+    margin: 10px 0 0;
+    font-weight: bold;
+    color: #c02525;
+    user-select: none;
+  }
 
-    .carousel {
-      width: 100%;
-      height: 100%;
-      perspective: 1500px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      cursor: grab;
-      user-select: none;
-      touch-action: pan-y;
-    }
-    .carousel.dragging { cursor: grabbing; }
-
-    .carousel-track {
-      width: 100%;
-      height: 100%;
-      position: relative;
-      transform-style: preserve-3d;
-    }
-
-    /* thẻ ảnh/video */
-    .card {
-      width: var(--card-w);
-      height: var(--card-h);
-      border-radius: var(--card-radius);
-      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-      text-align: center;
-      position: absolute;
-      top: 35%;
-      left: 50%;
-      transform: translateX(-50%);
-      transition: transform 0.25s ease, opacity 0.25s ease;
-      overflow: hidden;
-      background:
-        linear-gradient(rgba(0,0,0,0.12), rgba(0,0,0,0.12)),
-        url("anh-nen-khung.jpg") center/cover no-repeat;
-      padding: 10px;
-      padding-top: 22px;
-      padding-bottom: 50px;
-    }
-
-    .card img,
-    .card video,
-    .card iframe {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;    /* giữ tỉ lệ, không cắt */
-      border-radius: 10px;
-      display: block;
-      margin: auto;
-    }
-
-    .caption {
-      margin: 8px 0 0;
-      font-weight: bold;
-      color: #c02525;
-      user-select: none;
-    }
-
-    /* nút mũi tên */
-    .nav-btn {
+  .days {
+    margin-top: 100px;
+    display: grid;
+    grid-template-columns: repeat(6,1fr);
+    gap: 12px;
+    justify-items: center;
+  }
+  .day {
+    padding: 10px 14px;
+    background: #007bff;
+    color: #fff;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+  }
+  .day:hover { background: #0056b3; }
+  .day.active { background: #0a58ca; }
+   .prev, .next {
       position: absolute;
       top: 50%;
       transform: translateY(-50%);
-      width: var(--arrow-size);
-      height: var(--arrow-size);
-      border: none;
-      border-radius: 50%;
-      background: rgba(0,0,0,0.5);
-      color: #fff;
-      font-size: 22px;
-      display: grid;
-      place-items: center;
-      cursor: pointer;
-      z-index: 10;
-      transition: background .2s;
-    }
-    .nav-btn:hover{ background: rgba(0,0,0,0.7); }
-    #prevBtn{ left: 12px; }
-    #nextBtn{ right: 12px; }
-
-    /* nhóm nút chọn ngày – cố định góc, không dính khối */
-    .days {
-      position: fixed;
-      left: 12px;
-      bottom: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      z-index: 20;
-    }
-    .day {
-      padding: 10px 14px;
       background: #007bff;
       color: #fff;
-      border-radius: 10px;
-      cursor: pointer;
       border: none;
-      font-size: 14px;
-      font-weight: 700;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+      font-size: 32px;
+      padding: 14px 20px;
+      border-radius: 50%;
+      cursor: pointer;
+      opacity: 0.9;
+      transition: 0.3s;
+      z-index: 10;
+    }
+
+    .prev:hover, .next:hover {
+      background: #0056b3;
+      opacity: 1;
+    }
+
+    .prev { left: 20px; }
+    .next { right: 20px; }
+    canvas {
+      display: block;
+    }
+    .button-group {
+  display: flex;
+  flex-direction: column; /* xếp dọc */
+  gap: 10px;              /* khoảng cách giữa các nút */
+  position: absolute;     /* nếu muốn nút nổi 1 góc */
+  bottom: 20px;           /* chỉnh vị trí */
+  left: 20px;
+  
+}
+
+.button-group button {
+  padding: 10px 16px;      /* khoảng cách trong nút */
+  border: none;
+  border-radius: 6px;
+  background: #b18924;     /* màu nền nút */
+  color: white;            /* màu chữ */
+  font-size: 14px;         /* kích thước chữ */
+  font-weight: bold;       /* chữ đậm */
+  font-family: Arial, sans-serif; /* font chữ */
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.button-group button:hover {
+  background: #95893b;
+}
+    #bg-canvas {
+      position: fixed;   /* phủ toàn màn hình */
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: -1;       /* nằm dưới carousel */
+      background: rgb(252, 248, 248); /* nền đen cho chữ rơi */
+    }
+    .falling-text {
+      position: absolute;
+      font-size: 22px;
+      color: #f0ff4dd1;
+      font-weight: bold;
       white-space: nowrap;
-    }
-    .day:hover { background: #0056b3; }
-    .day.active { background: #0a58ca; }
-
-    /* Responsive cho mobile */
-    @media (max-width: 768px){
-      :root{
-        --arrow-size: 38px;
-        --card-w: min(92vw, 420px);
-        --card-h: auto;       /* cho phép cao theo nội dung */
-      }
-
-      .card{
-        top: 30%;
-        padding-top: 14px;
-      }
-
-      .card img,
-      .card video,
-      .card iframe{
-        height: auto;
-        max-height: 58vh;     /* không vượt chiều cao màn hình */
-      }
-
-      .day{
-        font-size: 13px;
-        padding: 8px 12px;
-      }
+      text-shadow: 0 0 8px #ff4dff;
+      animation: fall 5s linear forwards;
     }
 
-    /* Rất nhỏ (điện thoại cỡ 360px) */
-    @media (max-width: 400px){
-      :root{ --arrow-size: 34px; }
-      #prevBtn{ left: 6px; }
-      #nextBtn{ right: 6px; }
+    @keyframes fall {
+      from { transform: translateY(-10vh); opacity: 1; }
+      to   { transform: translateY(110vh); opacity: 0; }
     }
-  </style>
+</style>
 </head>
 <body>
-  <!-- Nền canvas + chữ rơi -->
-  <canvas id="bg-canvas"></canvas>
+<!-- 👇 thêm canvas nền -->
+<canvas id="bg-canvas"></canvas>
 
-  <h1>Kỷ niệm của chúng tôi</h1>
+<h1>Kỷ niệm của chúng tôi</h1>
 
-  <div class="stage">
-    <div class="carousel" id="carousel">
-      <div class="carousel-track" id="track"></div>
-    </div>
+<div class="stage">
+  <div class="carousel" id="carousel">
+    <div class="carousel-track" id="track"></div>
+  </div>
+</div>
 
-    <button class="nav-btn" id="prevBtn" aria-label="Trước">&#10094;</button>
-    <button class="nav-btn" id="nextBtn" aria-label="Sau">&#10095;</button>
+<!-- DANH SÁCH NGÀY -->
+<div class="days">
+  <div class="day" data-media=" 1 (1).jpg,
+   1 (3).jpg,
+    1 (4).jpg,
+     1 (5).jpg,
+      1 (6).jpg,
+       1 (7).jpg,
+        1 (8).jpg,
+         1 (9).jpg,
+          1 (10).jpg,
+           1 (11).jpg,
+            1 (12).jpg,
+             1 (13).jpg,
+              1 (14).jpg,
+               1 (15).jpg, 1 (16).jpg, 1 (17).jpg, 1 (18).jpg, 1 (19).jpg, 1 (20).jpg, 1 (21).jpg, 1 (22).jpg, 1 (23).jpg, 1 (24).jpg, 1 (25).jpg, 1 (26).jpg, 1 (27).jpg, 1 (28).jpg, 1 (29).jpg, 1 (30).jpg, 1 (31).jpg, 1 (32).jpg, 1 (33).jpg, 1 (34).jpg, 1 (35).jpg, 1 (36).jpg, 1 (37).jpg, 1 (38).jpg, 1 (39).jpg, 1 (40).jpg, 1 (41).jpg, 1 (42).jpg, 1 (43).jpg, 1 (44).jpg, 1 (45).jpg, 1 (46).jpg, 1 (47).jpg, 1 (48).jpg, 1 (49).jpg, 1 (50).jpg, 1 (51).jpg, 1 (52).jpg, 1 (53).jpg, 1 (54).jpg, 1 (55).jpg, 1 (56).jpg,
+                1 (57).jpg ">
+                
+  ảnh dìm banh nóc
+
+</div>
+    <div class="day" 
+     data-media="day2/1.jpg,
+                 day2/2.jpg,
+                 day2/3.jpg,
+                 day2/4.jpg,
+                 day2/5.jpg,
+                 day2/6.jpg,
+                 day2/7.jpg,
+                 day2/8.jpg,
+                 day2/9.jpg,
+                 day2/10.jpg,
+                 day2/11.jpg,
+                 day2/12.jpg,
+                 day2/13.jpg,
+                 day2/14.jpg,
+                 day2/15.jpg,
+                 day2/16.jpg,
+                 day2/17.jpg,
+                 day2/18.jpg,
+                 day2/19.jpg,
+                 day2/20.jpg,
+                 day2/21.jpg">
+              
+                 ảnh tâm tình
+                 </div>
+<button class="prev" id="prevBtn">&#10094;</button>
+  <button class="next" id="nextBtn">&#10095;</button>
   </div>
 
-  <!-- Nhóm nút NGÀY (đặt đúng cấu trúc, không lồng sai) -->
-  <div class="days" id="days">
-    <button class="day" data-media="
-      1 (1).jpg, 1 (3).jpg, 1 (4).jpg, 1 (5).jpg, 1 (6).jpg,
-      1 (7).jpg, 1 (8).jpg, 1 (9).jpg, 1 (10).jpg, 1 (11).jpg,
-      1 (12).jpg, 1 (13).jpg, 1 (14).jpg, 1 (15).jpg, 1 (16).jpg,
-      1 (17).jpg, 1 (18).jpg, 1 (19).jpg, 1 (20).jpg, 1 (21).jpg,
-      1 (22).jpg, 1 (23).jpg, 1 (24).jpg, 1 (25).jpg, 1 (26).jpg,
-      1 (27).jpg, 1 (28).jpg, 1 (29).jpg, 1 (30).jpg, 1 (31).jpg,
-      1 (32).jpg, 1 (33).jpg, 1 (34).jpg, 1 (35).jpg, 1 (36).jpg,
-      1 (37).jpg, 1 (38).jpg, 1 (39).jpg, 1 (40).jpg, 1 (41).jpg,
-      1 (42).jpg, 1 (43).jpg, 1 (44).jpg, 1 (45).jpg, 1 (46).jpg,
-      1 (47).jpg, 1 (48).jpg, 1 (49).jpg, 1 (50).jpg, 1 (51).jpg,
-      1 (52).jpg, 1 (53).jpg, 1 (54).jpg, 1 (55).jpg, 1 (56).jpg, 1 (57).jpg
-    ">Ảnh dìm banh nóc</button>
+<script>
+  /* --------------------- CODE CŨ GIỮ NGUYÊN -------------------- */
+  const track = document.getElementById("track");
+  const dayEls = document.querySelectorAll(".day");
+  const isImage = src => /\.(jpe?g|png|gif|webp|avif)$/i.test(src);
+  const isVideo = src => /\.(mp4|webm|ogg)$/i.test(src);
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  let list = [];
+  let captions = [];
+  let angle = 0;
+  let startX = 0;
+  let isDragging = false;
+  let counter = 0;
+  const radius = 800;
 
-    <button class="day" data-media="
-      day2/1.jpg, day2/2.jpg, day2/3.jpg, day2/4.jpg, day2/5.jpg,
-      day2/6.jpg, day2/7.jpg, day2/8.jpg, day2/9.jpg, day2/10.jpg,
-      day2/11.jpg, day2/12.jpg, day2/13.jpg, day2/14.jpg, day2/15.jpg,
-      day2/16.jpg, day2/17.jpg, day2/18.jpg, day2/19.jpg, day2/20.jpg, day2/21.jpg
-    ">Ảnh tâm tình</button>
-  </div>
-
-  <script>
-    /* ===================== 3D CAROUSEL ===================== */
-    const track   = document.getElementById("track");
-    const dayEls  = document.querySelectorAll(".day");
-    const prevBtn = document.getElementById("prevBtn");
-    const nextBtn = document.getElementById("nextBtn");
-    const carousel= document.getElementById("carousel");
-
-    const isImage = src => /\.(jpe?g|png|gif|webp|avif)$/i.test(src.trim());
-    const isVideo = src => /\.(mp4|webm|ogg)$/i.test(src.trim());
-
-    let list = [];
-    let angle = 0;
-    let startX = 0;
-    let isDragging = false;
-
-    const getRadius = () => {
-      // bán kính phụ thuộc kích thước màn hình (đẹp trên mobile)
-      const base = Math.min(window.innerWidth, 1200);
-      return Math.max(380, base * 0.75);
-    };
-
-    function makeMediaEl(src) {
-      if (isImage(src)) {
-        const img = document.createElement("img");
-        img.loading = "lazy";
-        img.src = src.trim();
-        return img;
-      } else if (isVideo(src)) {
-        const vid = document.createElement("video");
-        vid.src = src.trim();
-        vid.playsInline = true;
-        vid.muted = true;
-        vid.loop = true;
-        vid.autoplay = true;
-        return vid;
-      }
-      const t = document.createElement("div");
-      t.textContent = "Không hỗ trợ: " + src;
-      t.style.color = "crimson";
-      t.style.fontWeight = "700";
-      return t;
+  function makeMediaEl(src) {
+    if (isImage(src)) {
+      const img = document.createElement("img");
+      img.src = src;
+      return img;
+    } else if (isVideo(src)) {
+      const vid = document.createElement("video");
+      vid.src = src;
+      vid.playsInline = true;
+      vid.muted = true;
+      vid.loop = true;
+      vid.autoplay = true;
+      return vid;
     }
+    return document.createTextNode("Không hỗ trợ: " + src);
+  }
 
-    function renderCards() {
-      track.innerHTML = "";
-      if (!list.length) return;
-
-      list.forEach(src => {
-        const card  = document.createElement("div");
-        card.className = "card";
-        card.appendChild(makeMediaEl(src));
-        const p = document.createElement("p");
-        p.className = "caption";
-        p.textContent = "";           // nếu muốn caption thì điền ở đây
-        card.appendChild(p);
-        track.appendChild(card);
-      });
-
-      updatePositions();
+  function renderCards() {
+    track.innerHTML = "";
+    if (!list.length) return;
+    list.forEach((src,i) => {
+      const card = document.createElement("div");
+      card.className = "card";
+      const media = makeMediaEl(src);
+      card.appendChild(media);
+      const p = document.createElement("p");
+      p.className = "caption";
+      card.appendChild(p);
+      track.appendChild(card);
+    });
+    updatePositions();
+  }
+  function updatePositions() {
+    const cards = document.querySelectorAll(".card");
+    const total = cards.length;
+    cards.forEach((card, i) => {
+      const theta = (360 / total) * i + angle;
+      const rad = theta * Math.PI / 180;
+      let x = Math.sin(rad) * radius-150;
+      let z = Math.cos(rad) * radius;
+      let finalScale = 0.8;
+      let opacity = 0.2;
+      let zIndex = Math.floor(z);
+      if (Math.abs(theta % 360) < 15 || Math.abs(theta % 360) > 345) {
+        finalScale = 1.4;
+        opacity = 1;
+        zIndex = 1000;
+      }
+      card.style.transform = `translateX(${x}px) translateZ(${z}px) scale(${finalScale})`;
+      card.style.top = "35%";
+      card.style.left = "50%";
+      card.style.opacity = opacity;
+      card.style.zIndex = zIndex;
+      const video = card.querySelector("video");
+      if (video) {
+        if (finalScale > 1) { video.muted = false; video.play().catch(()=>{}); }
+        else { video.pause(); video.muted = true; }
+      }
+    });
+  }
+  dayEls.forEach(d => {
+    d.addEventListener("click", () => {
+      dayEls.forEach(x => x.classList.remove("active"));
+      d.classList.add("active");
+      list = (d.getAttribute("data-media")||"").split(",").map(s=>s.trim()).filter(Boolean);
+      captions = (d.getAttribute("data-captions")||"").split("|").map(s=>s.trim());
+      angle = 0;
+      renderCards();
+    });
+  });
+  document.addEventListener("mousedown", e => { isDragging = true; startX = e.clientX; });
+  document.addEventListener("mousemove", e => {
+    if (!isDragging) return;
+    const deltaX = e.clientX - startX;
+    angle += deltaX * 0.1;
+    updatePositions();
+    startX = e.clientX;
+  });
+  document.addEventListener("mouseup", () => { isDragging = false; });
+  document.addEventListener("touchstart", e => { isDragging = true; startX = e.touches[0].clientX; });
+  document.addEventListener("touchmove", e => {
+    if (!isDragging) return;
+    const deltaX = e.touches[0].clientX - startX;
+    angle += deltaX * 0.3;
+    updatePositions();
+    startX = e.touches[0].clientX;
+  });
+  document.addEventListener("touchend", () => { isDragging = false; });
+  (function selectFirstDay(){
+    for (const d of dayEls) {
+      if ((d.getAttribute('data-media')||'').trim()) { d.click(); break; }
     }
+  })();
+  nextBtn.addEventListener('click', () => { angle -= 360 / list.length; updatePositions(); });
+  track.addEventListener("click", e => {
+    const card = e.target.closest(".card");
+    if (!card) return;
+    const cards = [...document.querySelectorAll(".card")];
+    const idx = cards.indexOf(card);
+    if (idx === -1) return;
+    angle = -(360 / cards.length) * idx;
+    updatePositions();
+  });
+  prevBtn.addEventListener('click', () => { angle += 360 / list.length; updatePositions(); });
 
-    function updatePositions() {
-      const cards = track.querySelectorAll(".card");
-      const total = cards.length;
-      const radius = getRadius();
+  /* --------------------- HIỆU ỨNG CHỮ RƠI -------------------- */
+const canvas = document.getElementById("bg-canvas");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-      cards.forEach((card, i) => {
-        const theta = (360 / total) * i + angle;
-        const norm = (theta % 360 + 360) % 360;   // 0..359
-        const rad  = theta * Math.PI / 180;
+const texts = [
+  "AL Bá Gia Lai",
+  "Mời Cả Nhà Ăn Cơm",
+  "8h họp đội hình nha mọi người ơi"
+]; // cụm chữ thay vì tách rời
 
-        const x = Math.sin(rad) * radius;
-        const z = Math.cos(rad) * radius;
+const maxLetters = 5; // tối đa 5 cụm chữ cùng lúc
+let falling = [];
 
-        let scale = 0.82;
-        let opacity = 0.25;
-        let zIndex = Math.floor(z);
+class FallingText {
+  constructor(text) {
+    this.text = text;
+    this.x = Math.random() * (canvas.width - 200); // random ngang, trừ lề cho đẹp
+    this.y = -50;
+    this.speed = 1.5 + Math.random() * 1.5; // tốc độ chậm hơn chút
+    this.fontSize = 28 + Math.random() * 6; // font đồng đều
+  }
+  draw() {
+    ctx.font = `${this.fontSize}px Arial`;
+    ctx.fillStyle = "lime";
+    ctx.fillText(this.text, this.x, this.y);
+    this.y += this.speed;
+  }
+}
+class Particle {
+  constructor(text) {
+    this.text = text;
 
-        // trung tâm màn hình
-        if (norm < 15 || norm > 345) {
-          scale = 1.35;
-          opacity = 1;
-          zIndex = 1000;
-        }
+    // điểm xuất phát ở giữa canvas
+    this.x = canvas.width / 2;
+    this.y = canvas.height / 2;
 
-        card.style.transform = `translateX(${x}px) translateZ(${z}px) scale(${scale})`;
-        card.style.opacity = opacity;
-        card.style.zIndex = zIndex;
+    // bay ra theo hướng ngẫu nhiên
+    const angle = Math.random() * Math.PI * 2;
+    const speed = Math.random() * 2 + 1;
 
-        const video = card.querySelector("video");
-        if (video){
-          if (scale > 1.0) { video.muted = false; video.play().catch(()=>{}); }
-          else { video.pause(); video.muted = true; }
-        }
-      });
+    this.vx = Math.cos(angle) * speed;
+    this.vy = Math.sin(angle) * speed;
+
+    this.opacity = 1;
+    this.size = 20 + Math.random() * 20;
+  }
+
+  draw() {
+    ctx.font = `${this.size}px Arial`;
+    ctx.fillStyle = `rgba(255, 150, 255, ${this.opacity})`;
+    ctx.fillText(this.text, this.x, this.y);
+
+    // cập nhật vị trí
+    this.x += this.vx;
+    this.y += this.vy;
+
+    // từ từ biến mất
+    this.opacity -= 0.005;
+  }
+}
+function animate() {
+  const bgImage = new Image();
+bgImage.src = "anh-nen-pon.jpg"; // ảnh nền của bạn
+
+function animate() {
+  // vẽ ảnh nền trước
+  ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+
+  // thêm cụm chữ mới nếu ít hơn maxLetters
+  if (falling.length < maxLetters && Math.random() > 0.97) {
+    const t = texts[Math.floor(Math.random() * texts.length)];
+    falling.push(new FallingText(t));
+  }
+
+  falling.forEach((ft, i) => {
+    ft.draw();
+    if (ft.y > canvas.height + 50) {
+      falling.splice(i, 1);
     }
+  });
 
-    // chọn ngày
-    dayEls.forEach(d => {
-      d.addEventListener("click", () => {
-        dayEls.forEach(x => x.classList.remove("active"));
-        d.classList.add("active");
-        list = (d.getAttribute("data-media") || "")
-          .split(",")
-          .map(s => s.trim())
-          .filter(Boolean);
-        angle = 0;
-        renderCards();
-      });
-    });
+  requestAnimationFrame(animate);
+}
 
-    // mặc định chọn cái đầu tiên có media
-    (function selectFirstDay(){
-      for (const d of dayEls) {
-        if ((d.getAttribute('data-media')||'').trim()){
-          d.click();
-          break;
-        }
-      }
-    })();
+// đảm bảo ảnh load xong mới chạy
+bgImage.onload = animate;
+  // thêm cụm chữ mới nếu ít hơn maxLetters
+  if (falling.length < maxLetters && Math.random() > 0.97) {
+    const t = texts[Math.floor(Math.random() * texts.length)];
+    falling.push(new FallingText(t));
+  }
 
-    // Drag xoay
-    document.addEventListener("mousedown", e => {
-      isDragging = true; startX = e.clientX; carousel.classList.add('dragging');
-    });
-    document.addEventListener("mousemove", e => {
-      if (!isDragging) return;
-      const deltaX = e.clientX - startX;
-      angle += deltaX * 0.12;
-      updatePositions();
-      startX = e.clientX;
-    });
-    document.addEventListener("mouseup", () => {
-      isDragging = false; carousel.classList.remove('dragging');
-    });
-
-    document.addEventListener("touchstart", e => {
-      isDragging = true; startX = e.touches[0].clientX; carousel.classList.add('dragging');
-    }, {passive:true});
-    document.addEventListener("touchmove", e => {
-      if (!isDragging) return;
-      const deltaX = e.touches[0].clientX - startX;
-      angle += deltaX * 0.32;
-      updatePositions();
-      startX = e.touches[0].clientX;
-    }, {passive:true});
-    document.addEventListener("touchend", () => {
-      isDragging = false; carousel.classList.remove('dragging');
-    });
-
-    // bấm mũi tên
-    nextBtn.addEventListener('click', () => {
-      if (!list.length) return;
-      angle -= 360 / list.length;
-      updatePositions();
-    });
-    prevBtn.addEventListener('click', () => {
-      if (!list.length) return;
-      angle += 360 / list.length;
-      updatePositions();
-    });
-
-    // click thẻ để đưa ra giữa
-    track.addEventListener("click", e => {
-      const card = e.target.closest(".card");
-      if (!card) return;
-      const cards = [...track.querySelectorAll(".card")];
-      const idx = cards.indexOf(card);
-      if (idx === -1) return;
-      angle = -(360 / cards.length) * idx;
-      updatePositions();
-    });
-
-    // khi đổi kích thước màn hình => căn lại vị trí
-    window.addEventListener("resize", updatePositions);
-
-    /* ===================== NỀN CHỮ RƠI ===================== */
-    const canvas = document.getElementById("bg-canvas");
-    const ctx = canvas.getContext("2d");
-
-    function resizeCanvas(){
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+  // vẽ và cập nhật cụm chữ
+  falling.forEach((ft, i) => {
+    ft.draw();
+    if (ft.y > canvas.height + 50) {
+      falling.splice(i, 1);
     }
-    resizeCanvas();
+  });
 
-    const texts = [
-      "AL Bá Gia Lai",
-      "Mời Cả Nhà Ăn Cơm",
-      "8h họp đội hình nha mọi người ơi"
-    ];
+  requestAnimationFrame(animate);
+}
+animate();
 
-    const bgImage = new Image();
-    bgImage.src = "anh-nen-pon.jpg";
+// cập nhật kích thước khi resize
+window.addEventListener("resize", () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
 
-    const falling = [];
-    const maxLetters = 5;
-
-    class FallingText {
-      constructor(text){
-        this.text = text;
-        this.x = Math.random() * (canvas.width - 200);
-        this.y = -50;
-        this.speed = 1.2 + Math.random() * 1.4;
-        this.fontSize = 24 + Math.random() * 8;
-      }
-      draw(){
-        ctx.font = `${this.fontSize}px Arial`;
-        ctx.fillStyle = "rgba(180,255,120,0.95)";
-        ctx.fillText(this.text, this.x, this.y);
-        this.y += this.speed;
-      }
-    }
-
-    function animateBG(){
-      // vẽ nền (nếu có ảnh thì vẽ, không thì fill)
-      if (bgImage.complete) {
-        ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
-      } else {
-        ctx.fillStyle = "#fcf8f8";
-        ctx.fillRect(0,0,canvas.width,canvas.height);
-      }
-
-      if (falling.length < maxLetters && Math.random() > 0.97){
-        const t = texts[Math.floor(Math.random()*texts.length)];
-        falling.push(new FallingText(t));
-      }
-
-      for (let i = falling.length - 1; i >= 0; i--){
-        const ft = falling[i];
-        ft.draw();
-        if (ft.y > canvas.height + 60){
-          falling.splice(i,1);
-        }
-      }
-      requestAnimationFrame(animateBG);
-    }
-    bgImage.onload = animateBG;
-    if (bgImage.complete) animateBG();
-
-    window.addEventListener("resize", () => {
-      resizeCanvas();
-      updatePositions();
-    });
-  </script>
+</script>
 </body>
 </html>
