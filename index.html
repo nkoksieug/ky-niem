@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <title>Vòng xoay kỷ niệm</title>
-<meta name="viewport" content="width=device-width, initial-scale=0.95, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=0.75, maximum-scale=1.0, user-scalable=no">
 
 <style>
   body {
@@ -398,76 +398,106 @@ canvas.height = window.innerHeight;
 const texts = [
   "AL Bá Gia Lai",
   "Mời Cả Nhà Ăn Cơm",
-  "8h họp đội hình nha mọi người ơi"
-]; // cụm chữ thay vì tách rời
+  "8h họp đội hình nha mọi người ơi",
+  "Chúc cả nhà luôn vui vẻ",
+  "Thành công nhé!",
+  "Ai đi hành chính công không",
+  "Thiên ơi",
+  "Anh Pon ơi",
+  "Nấu cơm chưa vậy",
+  "Hôm nay không tập múa nha",
+  "bắt Cọp uống rượu cần đê",
+  "chính quyền ",
+  "giáng my heo",
+  "điềm ồn",
+  "Ngọc Lan siêu ồn nhất tg",
+  "chị già",
+  "Trân là heo peppa",
+  "trang xinh???",
+  "nhi cute dễ thương vô đối",
+  "Sĩ U40",
+  "Bà Kim Điên ",
+  "Ba Duy",
+  "Ánh ngu",
+  "Công chúa thủy tề",
+  "Ngân Khoa mập",
+  "Xuân Khôi Đẹp 1st",
+  "Cô giáo",
+  "Ngân thu mập",
+  "Le le",
+  "Yến Yến",
+  "Hưng Già",
+  "Đạt cọc",
+  "Tiêu Dao",
+  "Phú bà",
+  "Ông địa Khương",
+  "Gấu",
+  "Thỏ",
+  "Alice",
+  "Đảng Viên mới"
+];
 
-const maxLetters = 5; // tối đa 5 cụm chữ cùng lúc
+const maxLetters = 250; 
 let falling = [];
 
+// Ảnh nền
+const bgImage = new Image();
+bgImage.src = "anh-nen-pon.jpg"; // thay link ảnh nền của bạn
+
+// lớp FallingText 3D + glow
 class FallingText {
   constructor(text) {
     this.text = text;
-    this.x = Math.random() * (canvas.width - 200); // random ngang, trừ lề cho đẹp
-    this.y = -50;
-    this.speed = 1.5 + Math.random() * 1.5; // tốc độ chậm hơn chút
-    this.fontSize = 28 + Math.random() * 6; // font đồng đều
+    this.x = (Math.random() - 0.5) * canvas.width * 2;  
+    this.y = Math.random() * 80;      
+    this.z = Math.random() * 1000 + 300; 
+    this.speed = 1.5 + Math.random() * 2;  
+    this.baseSize = 50 + Math.random() * 20; 
+
+    // màu chữ + phát sáng
+    this.color = "white";
+    const glowColors = ["rgba(0,200,255,0.8)", "rgba(255,100,200,0.8)", "rgba(255,200,0,0.8)"];
+    this.glow = glowColors[Math.floor(Math.random() * glowColors.length)];
   }
+  
   draw() {
-    ctx.font = `${this.fontSize}px Arial`;
-    ctx.fillStyle = "lime";
-    ctx.fillText(this.text, this.x, this.y);
-    this.y += this.speed;
+    const scale = 600 / (600 + this.z); 
+    const screenX = canvas.width / 2 + this.x * scale;
+    const screenY = this.y * scale;
+
+    const size = this.baseSize * scale;
+    const opacity = Math.max(0, Math.min(1, 1 - this.z / 1500));
+
+    ctx.font = `bold ${size}px Times New Roman`;
+    ctx.fillStyle = `rgba(255,255,255,${opacity})`;
+
+    // hiệu ứng glow
+    ctx.shadowColor = this.glow;
+    ctx.shadowBlur = 25;
+
+    ctx.fillText(this.text, screenX, screenY);
+
+    // reset shadow để tránh ảnh hưởng phần khác
+    ctx.shadowBlur = 0;
+
+    // update vị trí
+    this.y += this.speed; 
+    this.z -= 2;          
   }
 }
-class Particle {
-  constructor(text) {
-    this.text = text;
 
-    // điểm xuất phát ở giữa canvas
-    this.x = canvas.width / 2;
-    this.y = canvas.height / 2;
-
-    // bay ra theo hướng ngẫu nhiên
-    const angle = Math.random() * Math.PI * 2;
-    const speed = Math.random() * 2 + 1;
-
-    this.vx = Math.cos(angle) * speed;
-    this.vy = Math.sin(angle) * speed;
-
-    this.opacity = 1;
-    this.size = 20 + Math.random() * 20;
-  }
-
-  draw() {
-    ctx.font = `${this.size}px Arial`;
-    ctx.fillStyle = `rgba(255, 150, 255, ${this.opacity})`;
-    ctx.fillText(this.text, this.x, this.y);
-
-    // cập nhật vị trí
-    this.x += this.vx;
-    this.y += this.vy;
-
-    // từ từ biến mất
-    this.opacity -= 0.005;
-  }
-}
+// animate
 function animate() {
-  const bgImage = new Image();
-bgImage.src = "anh-nen-pon.jpg"; // ảnh nền của bạn
-
-function animate() {
-  // vẽ ảnh nền trước
   ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
 
-  // thêm cụm chữ mới nếu ít hơn maxLetters
-  if (falling.length < maxLetters && Math.random() > 0.97) {
+  if (falling.length < maxLetters && Math.random() > 0.9) {
     const t = texts[Math.floor(Math.random() * texts.length)];
     falling.push(new FallingText(t));
   }
 
   falling.forEach((ft, i) => {
     ft.draw();
-    if (ft.y > canvas.height + 50) {
+    if (ft.y > canvas.height + 100 || ft.z < -200) {
       falling.splice(i, 1);
     }
   });
@@ -475,32 +505,12 @@ function animate() {
   requestAnimationFrame(animate);
 }
 
-// đảm bảo ảnh load xong mới chạy
 bgImage.onload = animate;
-  // thêm cụm chữ mới nếu ít hơn maxLetters
-  if (falling.length < maxLetters && Math.random() > 0.97) {
-    const t = texts[Math.floor(Math.random() * texts.length)];
-    falling.push(new FallingText(t));
-  }
 
-  // vẽ và cập nhật cụm chữ
-  falling.forEach((ft, i) => {
-    ft.draw();
-    if (ft.y > canvas.height + 50) {
-      falling.splice(i, 1);
-    }
-  });
-
-  requestAnimationFrame(animate);
-}
-animate();
-
-// cập nhật kích thước khi resize
 window.addEventListener("resize", () => {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 });
-
 </script>
 </body>
 </html>
